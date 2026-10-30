@@ -1,0 +1,31 @@
+name: Java and PostgreSQL tests
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: tracker_test
+          POSTGRES_USER: tracker_ci
+          POSTGRES_PASSWORD: ephemeral_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tracker_ci -d tracker_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_TEST_URL: jdbc:postgresql://localhost:5432/tracker_test
+      DB_TEST_USER: tracker_ci
+      DB_TEST_PASSWORD: ephemeral_ci_password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn --batch-mode -Pintegration verify
